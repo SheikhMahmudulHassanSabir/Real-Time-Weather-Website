@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeatherNow — Station Observation</title>
+<meta name="description" content="WeatherNow: a live weather observation dashboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,340;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <div class="sky-layer" id="skyA"></div>
+  <div class="sky-layer" id="skyB"></div>
+  <div class="grain"></div>
+</div>
+
+<div class="wrap">
+
+  <header class="site-head">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </span>
+      <span class="brand-name">Weather<em>Now</em></span>
+    </div>
+    <p class="brand-sub">station observation dashboard</p>
+  </header>
+
+  <form class="search-row" id="searchForm" role="search" aria-label="Search for a city">
+    <label class="sr-only" for="citySearch">Enter city name</label>
+    <div class="search-field">
+      <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M20 20l-4.5-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input type="text" id="citySearch" name="citySearch" placeholder="Enter city name…" autocomplete="off" inputmode="search">
+    </div>
+    <button type="submit" class="btn btn-primary" id="searchBtn">Search</button>
+    <button type="button" class="btn btn-ghost" id="locateBtn" title="Use my location" aria-label="Use my location">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+    </button>
+  </form>
+  <div class="unit-toggle" role="group" aria-label="Temperature unit">
+    <button type="button" class="unit-btn is-active" id="unitC" aria-pressed="true">°C</button>
+    <button type="button" class="unit-btn" id="unitF" aria-pressed="false">°F</button>
+  </div>
+
+  <main id="main" aria-live="polite">
+
+    <!-- Initial state -->
+    <section class="state-panel" id="initialState">
+      <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+      <p>Search for a city to see the current weather.</p>
+    </section>
+
+    <!-- Loading state -->
+    <section class="state-panel" id="loadingState" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Taking a reading…</p>
+    </section>
+
+    <!-- Not found state -->
+    <section class="state-panel state-panel--warn" id="notFoundState" hidden>
+      <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <p>We couldn't find that city. Please check the spelling and try again.</p>
+    </section>
+
+    <!-- Error state -->
+    <section class="state-panel state-panel--warn" id="errorState" hidden>
+      <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M12 3l10 18H2L12 3z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <p>Unable to retrieve weather data. Please try again later.</p>
+    </section>
+
+    <!-- Results -->
+    <section class="results" id="results" hidden>
+
+      <div class="station-plate">
+        <span class="rivet rivet-tl" aria-hidden="true"></span>
+        <span class="rivet rivet-tr" aria-hidden="true"></span>
+        <span class="rivet rivet-bl" aria-hidden="true"></span>
+        <span class="rivet rivet-br" aria-hidden="true"></span>
+
+        <div class="plate-head">
+          <div class="plate-place">
+            <h1 id="cityName">—</h1>
+            <span id="countryName" class="plate-country"></span>
+          </div>
+          <button type="button" class="btn btn-ghost btn-refresh" id="refreshBtn" title="Refresh reading">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 11A8 8 0 106.3 17.7M4 12A8 8 0 0117.7 6.3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M20 5v6h-6M4 19v-6h6" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="plate-body">
+          <div class="gauge-wrap">
+            <svg class="gauge" viewBox="0 0 220 160" aria-hidden="true">
+              <path id="gaugeTrack" class="gauge-track" d="" />
+              <path id="gaugeFill" class="gauge-fill" d="" />
+              <g id="gaugeTicks"></g>
+              <line id="gaugeNeedle" class="gauge-needle" x1="110" y1="140" x2="110" y2="60" />
+              <circle cx="110" cy="140" r="4.5" class="gauge-hub" />
+            </svg>
+            <div class="gauge-readout">
+              <span id="tempIcon" class="temp-icon" aria-hidden="true"></span>
+              <span class="temp-value"><span id="temperature">—</span><span class="temp-unit" id="tempUnitLabel">°C</span></span>
+              <span id="conditionText" class="condition-text">—</span>
+            </div>
+          </div>
+
+          <dl class="plate-footnote">
+            <div><dt>Feels like</dt><dd id="feelsLike">—</dd></div>
+            <div><dt>Updated</dt><dd id="lastUpdated">—</dd></div>
+            <div><dt>Coordinates</dt><dd id="coords">—</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="tiles" id="tiles">
+        <article class="tile">
+          <span class="tile-label">Humidity</span>
+          <span class="tile-value" id="humidity">—</span>
+        </article>
+        <article class="tile">
+          <span class="tile-label">Wind</span>
+          <span class="tile-value" id="windSpeed">—</span>
+          <span class="tile-sub" id="windDir"></span>
+        </article>
+        <article class="tile">
+          <span class="tile-label">Pressure</span>
+          <span class="tile-value" id="pressure">—</span>
+        </article>
+        <article class="tile">
+          <span class="tile-label">Visibility</span>
+          <span class="tile-value" id="visibility">—</span>
+        </article>
+        <article class="tile">
+          <span class="tile-label">Sunrise</span>
+          <span class="tile-value" id="sunrise">—</span>
+        </article>
+        <article class="tile">
+          <span class="tile-label">Sunset</span>
+          <span class="tile-value" id="sunset">—</span>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-foot">
+    <p>Data from Open‑Meteo. No API key required.</p>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
