@@ -1,0 +1,6 @@
+node_modules/
+*.log
+screenshot_*.png
+run_visual_test.js
+verify_visuals.spec.js
+test-results/
